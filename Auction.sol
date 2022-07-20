@@ -37,17 +37,26 @@ contract Auction {
         highestBid = msg.value;
     }
 
-    function withDraw() public returns (bool){
-        uint amount = chargeback[msg.sender]; // сколько надо вернуть
+    function withDraw(address payable sender) public returns (bool){
+        require(sender == msg.sender, "Invalid address");
+
+        uint amount = chargeback[sender]; // сколько надо вернуть
+        //msg.sender.payable = true;
         if (amount > 0){
             // посылаем деньги обратно
-            if(msg.sender.send(amount)){
+            if(sender.send(amount)){
                 // если всё ок, то обнуляем долг
-                chargeback[msg.sender] = 0;
+                chargeback[sender] = 0;
                 return true;
             }
         }
         return false;
     }
 
+    function finalizeAuction() public{
+        require(block.timestamp >= endTime, "Auction hasn't ended yet");
+        require(seller == msg.sender, "Only seller can finalize");
+
+        seller.transfer(highestBid);
+    }
 }
